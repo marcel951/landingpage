@@ -1,0 +1,29 @@
+---
+interface Logo {
+  path: string;
+  title: string;
+}
+
+interface Props {
+  name: string;
+  logo?: Logo;
+  short?: string;
+}
+
+const { name, logo, short } = Astro.props;
+---
+
+<li class="tech-item">
+  <span class="tech-item__icon" aria-hidden="true">
+    {
+      logo ? (
+        <svg viewBox="0 0 24 24">
+          <path d={logo.path}></path>
+        </svg>
+      ) : (
+        <span>{short}</span>
+      )
+    }
+  </span>
+  <span>{name}</span>
+</li>
