@@ -175,9 +175,9 @@ const projects = [
           </div>
         </div>
 
-        <div class="portrait reveal" data-reveal aria-label="Platzhalter für ein Porträtfoto">
-          <div class="portrait__placeholder"><span>MK</span></div>
-          <div class="portrait__caption"><span>Porträt</span><span>folgt</span></div>
+        <div class="math-field" aria-hidden="true">
+          <canvas data-math-field></canvas>
+          <div class="math-field__constants"><span>π</span><span>e</span><span>φ</span><span>√2</span></div>
         </div>
 
         <div class="hero__footer reveal" data-reveal>
@@ -208,6 +208,36 @@ const projects = [
               IT-Projektarbeit.
             </p>
           </div>
+        </div>
+
+        <div class="career-timeline" data-timeline aria-label="Mein beruflicher Weg">
+          <div class="career-timeline__track" aria-hidden="true"><span></span></div>
+          <ol>
+            <li class="career-step" data-timeline-step>
+              <span class="career-step__number">01</span>
+              <p class="career-step__phase">Fundament</p>
+              <h3>Ausbildung</h3>
+              <p>Fachinformatiker für Systemintegration</p>
+            </li>
+            <li class="career-step" data-timeline-step>
+              <span class="career-step__number">02</span>
+              <p class="career-step__phase">Praxis</p>
+              <h3>Systemintegration</h3>
+              <p>IT-Betrieb und Projekte in der Energiebranche</p>
+            </li>
+            <li class="career-step" data-timeline-step>
+              <span class="career-step__number">03</span>
+              <p class="career-step__phase">Vertiefung</p>
+              <h3>Bachelor Informatik</h3>
+              <p>Softwareentwicklung und Informatik</p>
+            </li>
+            <li class="career-step" data-timeline-step>
+              <span class="career-step__number">04</span>
+              <p class="career-step__phase">Heute</p>
+              <h3>Masterstudium</h3>
+              <p>Weitere fachliche Spezialisierung</p>
+            </li>
+          </ol>
         </div>
       </section>
 
@@ -335,6 +365,145 @@ const projects = [
       );
 
       document.querySelectorAll('[data-reveal]').forEach((element) => revealObserver.observe(element));
+
+      const timeline = document.querySelector<HTMLElement>('[data-timeline]');
+      const timelineSteps = document.querySelectorAll<HTMLElement>('[data-timeline-step]');
+      const timelineObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const step = entry.target as HTMLElement;
+            step.classList.add('is-active');
+            timeline?.style.setProperty('--timeline-progress', `${Number(step.dataset.step) + 1}`);
+            timelineObserver.unobserve(step);
+          });
+        },
+        { threshold: 0.55 },
+      );
+
+      timelineSteps.forEach((step, index) => {
+        step.dataset.step = String(index);
+        timelineObserver.observe(step);
+      });
+
+      const mathCanvas = document.querySelector<HTMLCanvasElement>('[data-math-field]');
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+      if (mathCanvas) {
+        const context = mathCanvas.getContext('2d');
+        const constants = [Math.PI, Math.E, (1 + Math.sqrt(5)) / 2, Math.SQRT2];
+        let width = 0;
+        let height = 0;
+        let frame = 0;
+        let points: Array<{ x: number; y: number; vx: number; vy: number }> = [];
+
+        const circumcircle = (a: typeof points[number], b: typeof points[number], c: typeof points[number]) => {
+          const d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
+          if (Math.abs(d) < 0.001) return { x: 0, y: 0, radiusSquared: -1 };
+          const a2 = a.x ** 2 + a.y ** 2;
+          const b2 = b.x ** 2 + b.y ** 2;
+          const c2 = c.x ** 2 + c.y ** 2;
+          const x = (a2 * (b.y - c.y) + b2 * (c.y - a.y) + c2 * (a.y - b.y)) / d;
+          const y = (a2 * (c.x - b.x) + b2 * (a.x - c.x) + c2 * (b.x - a.x)) / d;
+          return { x, y, radiusSquared: (x - a.x) ** 2 + (y - a.y) ** 2 };
+        };
+
+        const triangulate = () => {
+          const margin = Math.max(width, height) * 10;
+          const vertices = [...points,
+            { x: -margin, y: height + margin, vx: 0, vy: 0 },
+            { x: width / 2, y: -margin, vx: 0, vy: 0 },
+            { x: width + margin, y: height + margin, vx: 0, vy: 0 },
+          ];
+          let triangles = [[points.length, points.length + 1, points.length + 2]];
+
+          points.forEach((point, pointIndex) => {
+            const bad = triangles.filter(([a, b, c]) => {
+              const circle = circumcircle(vertices[a], vertices[b], vertices[c]);
+              return circle.radiusSquared >= 0 && (point.x - circle.x) ** 2 + (point.y - circle.y) ** 2 < circle.radiusSquared;
+            });
+            const edges: Array<[number, number]> = [];
+            bad.forEach(([a, b, c]) => edges.push([a, b], [b, c], [c, a]));
+            triangles = triangles.filter((triangle) => !bad.includes(triangle));
+            const boundary = edges.filter(([a, b], index) =>
+              !edges.some(([c, d], other) => other !== index && a === d && b === c),
+            );
+            boundary.forEach(([a, b]) => triangles.push([a, b, pointIndex]));
+          });
+
+          return triangles.filter((triangle) => triangle.every((index) => index < points.length));
+        };
+
+        const drawMathField = () => {
+          if (!context) return;
+          context.clearRect(0, 0, width, height);
+          const accent = getComputedStyle(root).getPropertyValue('--accent').trim();
+          const triangles = triangulate();
+
+          triangles.forEach(([a, b, c], index) => {
+            context.beginPath();
+            context.moveTo(points[a].x, points[a].y);
+            context.lineTo(points[b].x, points[b].y);
+            context.lineTo(points[c].x, points[c].y);
+            context.closePath();
+            context.strokeStyle = accent;
+            context.globalAlpha = 0.12;
+            context.lineWidth = 0.8;
+            context.stroke();
+            if (index % 7 === 0) {
+              context.globalAlpha = 0.025 + Math.sin(frame / 90 + index) * 0.01;
+              context.fillStyle = accent;
+              context.fill();
+            }
+          });
+
+          context.globalAlpha = 0.38;
+          context.fillStyle = accent;
+          points.forEach((point, index) => {
+            context.beginPath();
+            context.arc(point.x, point.y, index % 5 === 0 ? 2.2 : 1.4, 0, Math.PI * 2);
+            context.fill();
+          });
+          context.globalAlpha = 1;
+        };
+
+        const animateMathField = () => {
+          frame += 1;
+          points.forEach((point) => {
+            point.x += point.vx;
+            point.y += point.vy;
+            if (point.x < 0 || point.x > width) point.vx *= -1;
+            if (point.y < 0 || point.y > height) point.vy *= -1;
+          });
+          drawMathField();
+          if (!reducedMotion.matches) requestAnimationFrame(animateMathField);
+        };
+
+        const resizeMathField = () => {
+          const bounds = mathCanvas.getBoundingClientRect();
+          width = bounds.width;
+          height = bounds.height;
+          const ratio = Math.min(window.devicePixelRatio, 2);
+          mathCanvas.width = width * ratio;
+          mathCanvas.height = height * ratio;
+          context?.setTransform(ratio, 0, 0, ratio, 0, 0);
+          points = Array.from({ length: width < 600 ? 12 : 20 }, (_, index) => {
+            const value = constants[index % constants.length];
+            return {
+              x: ((index * 0.61803398875 + value) % 1) * width,
+              y: ((index * value * 0.137 + constants[(index + 1) % constants.length]) % 1) * height,
+              vx: Math.cos(value * (index + 1)) * 0.12,
+              vy: Math.sin(value * (index + 1)) * 0.12,
+            };
+          });
+          drawMathField();
+        };
+
+        new ResizeObserver(resizeMathField).observe(mathCanvas);
+        new MutationObserver(drawMathField).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+        resizeMathField();
+        if (!reducedMotion.matches) requestAnimationFrame(animateMathField);
+      }
     </script>
   </body>
 </html>
