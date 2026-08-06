@@ -356,8 +356,7 @@
     mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 35%) 25%, #000 62%);
   }
 
-  .hero__copy,
-  .hero__footer {
+  .hero__copy {
     position: relative;
     z-index: 1;
   }
@@ -431,24 +430,6 @@
 
   .theme-wave.is-active {
     animation: theme-wave 1300ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .hero__footer {
-    display: flex;
-    grid-column: 1 / -1;
-    gap: 1.4rem;
-    align-items: center;
-    margin-top: auto;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--line);
-    color: var(--muted);
-    font-size: 0.66rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .hero__footer span:last-child {
-    margin-left: auto;
   }
 
   .section-label {
@@ -819,10 +800,6 @@
     mask-image: linear-gradient(90deg, transparent 0%, #000 48%, #000 100%);
   }
 
-  .hero__footer {
-    margin-top: 1rem;
-  }
-
   .profile__content,
   .tech__heading,
   .contact__content {
@@ -880,14 +857,6 @@
 
   .project__link {
     justify-self: start;
-  }
-
-  .hero__footer {
-    flex-wrap: wrap;
-  }
-
-  .hero__footer span:last-child {
-    margin-left: 0;
   }
 
   .site-footer {
