@@ -1,6 +1,10 @@
 name: Deploy to GitHub Pages
 
 on:
+  # Pull Requests aus dev vor dem Merge prüfen, aber nicht deployen.
+  pull_request:
+    branches: [main]
+  # Ein Merge nach main erzeugt einen Push und startet das Deployment.
   push:
     branches: [main]
   workflow_dispatch:
@@ -20,7 +24,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Repository auschecken
-        uses: actions/checkout@v7
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
 
@@ -31,6 +35,7 @@ jobs:
           build-cmd: npm run verify
 
   deploy:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
