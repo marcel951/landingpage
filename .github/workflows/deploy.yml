@@ -28,6 +28,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: GitHub Pages konfigurieren
+        uses: actions/configure-pages@v5
+
       - name: Website prüfen, bauen und hochladen
         uses: withastro/action@v6
         with:
